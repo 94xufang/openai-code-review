@@ -96,39 +96,59 @@ public class GitCommand {
      * @return
      */
     public String commitAndPush(String recommend) throws Exception {
+        logger.info("start commitAndPush, project: {}, branch: {}", project, branch);
+        
         //第一步：克隆评审日志仓库
+        logger.info("cloning review log repository: {}", githubReviewLogUri);
         Git git = Git.cloneRepository()
                 .setURI(githubReviewLogUri + ".git")
                 .setDirectory(new File("repo"))
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(githubToken, ""))
                 .call();
+        logger.info("repository cloned successfully");
+        
         //第二步：创建按日期分类的目录
         String dateFolderName = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         File dateFolder = new File("repo/" + dateFolderName);
         if(!dateFolder.exists()) {
             dateFolder.mkdirs();
+            logger.info("created date folder: {}", dateFolderName);
         }
+        
         //第三步：生成唯一的文件名
         String fileName = project + "-" +
                           branch + "-" +
                           author +
                           System.currentTimeMillis() + "-" +
                           RandomStingUtils.randomNumeric(4) + ".md";
+        
         //第四步：写入评审内容
         File newFile = new File(dateFolder, fileName);
         try (FileWriter fileWriter = new FileWriter(newFile)) {
             fileWriter.write(recommend);
+            fileWriter.flush();
         }
+        logger.info("review content written to file: {}", fileName);
+        
         //第五步：Git 添加文件
         git.add().addFilepattern(dateFolderName + "/" + fileName).call();
+        logger.info("file added to git staging area");
+        
         //第六步：Git 提交
         git.commit().setMessage("add code review new file").call();
+        logger.info("file committed to local repository");
+        
         //第七步：Git 推送
         git.push().setCredentialsProvider(new UsernamePasswordCredentialsProvider(githubToken, "")).call();
+        logger.info("file pushed to remote repository");
+        
         //第八步：记录日志
         logger.info("review commit and push finished!");
+        
         //第九步：返回访问 URL
-        return githubReviewLogUri + "/blob/master/" + dateFolderName + "/" + fileName;
+        String logUrl = githubReviewLogUri + "/blob/master/" + dateFolderName + "/" + fileName;
+        logger.info("log url: {}", logUrl);
+        return logUrl;
     }
 
     public String getMessage() {

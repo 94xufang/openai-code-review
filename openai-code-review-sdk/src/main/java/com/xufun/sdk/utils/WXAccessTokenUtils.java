@@ -1,6 +1,8 @@
 package com.xufun.sdk.utils;
 
 import com.alibaba.fastjson2.JSON;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -9,18 +11,21 @@ import java.net.URL;
 
 public class WXAccessTokenUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(WXAccessTokenUtils.class);
+
     private static final String GRANT_TYPE = "client_credential";
     private static final String URL_TEMPLATE = "https://api.weixin.qq.com/cgi-bin/token?grant_type=%s&appid=%s&secret=%s";
 
     public static String getAccessToken(String APPID, String SECRET) {
         try {
+            logger.info("getting access token for appid: {}", APPID);
             String urlString = String.format(URL_TEMPLATE, GRANT_TYPE, APPID, SECRET);
             URL url = new URL(urlString);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
+            logger.info("access token response code: {}", responseCode);
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -32,18 +37,23 @@ public class WXAccessTokenUtils {
                 }
                 in.close();
 
-                // Print the response
-                System.out.println("Response: " + response.toString());
+                logger.info("access token response: {}", response.toString());
 
                 Token token = JSON.parseObject(response.toString(), Token.class);
-
+                
+                if (token.getAccess_token() == null) {
+                    logger.error("failed to get access token, response: {}", response.toString());
+                    return null;
+                }
+                
+                logger.info("access token obtained successfully, expires in: {} seconds", token.getExpires_in());
                 return token.getAccess_token();
             } else {
-                System.out.println("GET request failed");
+                logger.error("GET request failed with response code: {}", responseCode);
                 return null;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("exception while getting access token", e);
             return null;
         }
     }

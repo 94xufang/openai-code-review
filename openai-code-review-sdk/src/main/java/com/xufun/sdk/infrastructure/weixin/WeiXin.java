@@ -32,10 +32,22 @@ public class WeiXin {
     }
 
     public void sendTemplateMessage(String logUrl, Map<String, Map<String, String>> data) throws Exception {
+        logger.info("start sending wechat template message...");
+        logger.info("logUrl: {}", logUrl);
+        logger.info("touser: {}, template_id: {}", touser, template_id);
+        
         //获得用于操作公众号的令牌
+        logger.info("getting access token...");
         String accessToken = WXAccessTokenUtils.getAccessToken(appid, secret);
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new RuntimeException("failed to get access token");
+        }
+        logger.info("access token obtained: {}", accessToken.substring(0, 10) + "...");
+        
         //创建模板消息
         TemplateMessageDTO templateMessageDTO = new TemplateMessageDTO(touser, template_id, logUrl, data);
+        logger.info("template message created");
+        
         //创建请求
         URL url = new URL(String.format("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=%s", accessToken));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -43,15 +55,30 @@ public class WeiXin {
         conn.setRequestProperty("Content-Type", "application/json; utf-8");
         conn.setRequestProperty("Accept", "application/json");
         conn.setDoOutput(true);
+        
         //发送请求
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = JSON.toJSONString(templateMessageDTO).getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
+            os.flush();
         }
+        logger.info("request sent to wechat server");
+        
         //接收结果
+        int responseCode = conn.getResponseCode();
+        logger.info("wechat response code: {}", responseCode);
+        
+        String response = "unknown";
         try (Scanner scanner = new Scanner(conn.getInputStream(), StandardCharsets.UTF_8.name())) {
-            String response = scanner.useDelimiter("\\A").next();
-            logger.info("openai-code-review weixin template message! {}", response);
+            response = scanner.useDelimiter("\\A").next();
+        } catch (Exception e) {
+            logger.warn("failed to read response body", e);
+        }
+        
+        logger.info("openai-code-review weixin template message response: {}", response);
+        
+        if (responseCode != 200) {
+            throw new RuntimeException("wechat API returned error response: " + responseCode);
         }
     }
 
