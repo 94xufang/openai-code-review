@@ -74,8 +74,8 @@ public class GitCommand {
         }
         logger.info("current directory is a git repository");
         
-        // 2️⃣ 获取最新 commit
-        ProcessBuilder logProcessBuilder = new ProcessBuilder("git", "log", "-1", "--pretty=format=%H");
+        // 2️⃣ 获取最新 commit hash
+        ProcessBuilder logProcessBuilder = new ProcessBuilder("git", "rev-parse", "HEAD");
         logProcessBuilder.directory(new File("."));
         Process logProcess = logProcessBuilder.start();
 
@@ -91,6 +91,7 @@ public class GitCommand {
         if (latestCommitHash == null || latestCommitHash.isEmpty()) {
             throw new RuntimeException("No commit found in repository");
         }
+        latestCommitHash = latestCommitHash.trim();
         logger.info("latest commit: {}", latestCommitHash.substring(0, 7));
 
         // 3️⃣ 判断是否有上一个 commit
@@ -111,6 +112,7 @@ public class GitCommand {
             diffProcessBuilder = new ProcessBuilder("git", "diff", "4b825dc642cb6eb9a060e54bf8d69288fbee4904", latestCommitHash);
         }
 
+        logger.info("executing git command: {}", String.join(" ", diffProcessBuilder.command()));
         diffProcessBuilder.directory(new File("."));
         diffProcessBuilder.redirectErrorStream(true);
         Process diffProcess = diffProcessBuilder.start();
@@ -126,7 +128,8 @@ public class GitCommand {
 
         int exitCode = diffProcess.waitFor();
         if (exitCode != 0) {
-            throw new RuntimeException("git diff failed with exit code: " + exitCode);
+            logger.error("git diff failed with exit code: {}, command: {}", exitCode, String.join(" ", diffProcessBuilder.command()));
+            throw new RuntimeException("git diff failed with exit code: " + exitCode + ". Please check if the repository has commits and git is working correctly.");
         }
         
         logger.info("got diff code, length: {}", diffCode.length());
