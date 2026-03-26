@@ -4,6 +4,8 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
@@ -12,6 +14,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class BearerTokenUtils {
+    private static final Logger logger = LoggerFactory.getLogger(BearerTokenUtils.class);
+
     // 过期时间；默认30分钟
     private static final long expireMillis = 30 * 60 * 1000L;
 
@@ -21,6 +25,7 @@ public class BearerTokenUtils {
             .build();
 
     public static String getToken(String apiKey) {
+        logger.info("generating token for api key prefix: {}", apiKey.substring(0, Math.min(10, apiKey.length())));
         String[] split = apiKey.split("\\.");
         return getToken(split[0], split[1]);
     }

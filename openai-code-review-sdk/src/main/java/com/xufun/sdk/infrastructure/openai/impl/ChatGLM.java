@@ -5,6 +5,8 @@ import com.xufun.sdk.infrastructure.openai.IOpenAI;
 import com.xufun.sdk.infrastructure.openai.dto.ChatCompletionRequestDTO;
 import com.xufun.sdk.infrastructure.openai.dto.ChatCompletionSyncResponseDTO;
 import com.xufun.sdk.utils.BearerTokenUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,6 +16,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class ChatGLM implements IOpenAI {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatGLM.class);
 
     private final String apiKey;
     private final String apiHost;
@@ -25,6 +29,7 @@ public class ChatGLM implements IOpenAI {
         if (apiHost == null || apiHost.isEmpty()) {
             throw new IllegalArgumentException("API host cannot be null or empty");
         }
+        
         // 如果没有协议前缀，添加 https://
         if (!apiHost.startsWith("http://") && !apiHost.startsWith("https://")) {
             this.apiHost = "https://" + apiHost;
@@ -32,6 +37,8 @@ public class ChatGLM implements IOpenAI {
             this.apiHost = apiHost;
         }
         this.apiKey = apiKey;
+        
+        logger.info("ChatGLM initialized with host: {}", this.apiHost);
     }
 
     @Override
