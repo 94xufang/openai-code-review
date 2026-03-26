@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -56,15 +57,27 @@ public class ChatGLM implements IOpenAI {
             os.write(input, 0, input.length);
         }
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        int responseCode = connection.getResponseCode();
+        logger.info("Response Code: {}", responseCode);
+
+        BufferedReader in;
+        if (responseCode >= 200 && responseCode < 300) {
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        } else {
+            in = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+        }
+        
         String inputLine;
         StringBuilder content = new StringBuilder();
         while ((inputLine = in.readLine()) != null) {
             content.append(inputLine);
+            content.append("\n");
         }
 
         in.close();
         connection.disconnect();
+
+        logger.info("Response Content: {}", content.toString());
 
         return JSON.parseObject(content.toString(), ChatCompletionSyncResponseDTO.class);
 
