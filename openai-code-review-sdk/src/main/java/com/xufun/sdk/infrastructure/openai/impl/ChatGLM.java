@@ -22,8 +22,8 @@ public class ChatGLM implements IOpenAI {
     private final String apiKeySecret;
     private final String apiHost;
 
-    public ChatGLM(String apiKey, String apiHost) {
-        if (apiKey == null || apiKey.isEmpty()) {
+    public ChatGLM(String apiHost, String apiKeySecret) {
+        if (apiKeySecret == null || apiKeySecret.isEmpty()) {
             throw new IllegalArgumentException("API key cannot be null or empty");
         }
         if (apiHost == null || apiHost.isEmpty()) {
@@ -31,7 +31,7 @@ public class ChatGLM implements IOpenAI {
         }
 
         this.apiHost = apiHost;
-        this.apiKeySecret = apiKey;
+        this.apiKeySecret = apiKeySecret;
         
         logger.info("ChatGLM initialized with host: {}", this.apiHost);
     }
