@@ -58,6 +58,23 @@ jobs:
           echo "Commit author is ${{ env.COMMIT_AUTHOR }}"
           echo "Commit message is ${{ env.COMMIT_MESSAGE }}"      
 
+      - name: Print environment variables
+        run: |
+          echo "=== Environment Variables ==="
+          echo "CHATGLM_APIHOST: ${CHATGLM_APIHOST:-NOT_SET}"
+          echo "CHATGLM_APIKEY: ${CHATGLM_APIKEY:-NOT_SET}"
+          echo "GITHUB_REVIEW_LOG_URI: ${GITHUB_REVIEW_LOG_URI:-NOT_SET}"
+          echo "GITHUB_TOKEN: ${GITHUB_TOKEN:-NOT_SET}"
+          echo "WEIXIN_APPID: ${WEIXIN_APPID:-NOT_SET}"
+          echo "WEIXIN_SECRET: ${WEIXIN_SECRET:-NOT_SET}"
+          echo "WEIXIN_TOUSER: ${WEIXIN_TOUSER:-NOT_SET}"
+          echo "WEIXIN_TEMPLATE_ID: ${WEIXIN_TEMPLATE_ID:-NOT_SET}"
+          echo "COMMIT_PROJECT: ${COMMIT_PROJECT:-NOT_SET}"
+          echo "COMMIT_BRANCH: ${COMMIT_BRANCH:-NOT_SET}"
+          echo "COMMIT_AUTHOR: ${COMMIT_AUTHOR:-NOT_SET}"
+          echo "COMMIT_MESSAGE: ${COMMIT_MESSAGE:-NOT_SET}"
+          echo "============================="
+
       - name: Run Code Review
         run: java -jar ./libs/openai-code-review-sdk-1.0.jar
         env:
