@@ -5,7 +5,7 @@ import java.util.List;
 public class ChatCompletionRequestDTO {
 
     private String model;
-    private List<Prompt> message;
+    private List<Prompt> messages;
 
     public static class Prompt {
         private String role;
@@ -43,10 +43,10 @@ public class ChatCompletionRequestDTO {
     }
 
     public List<Prompt> getMessage() {
-        return message;
+        return messages;
     }
 
     public void setMessage(List<Prompt> message) {
-        this.message = message;
+        this.messages = message;
     }
 }
