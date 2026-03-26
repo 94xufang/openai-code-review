@@ -60,33 +60,76 @@ public class GitCommand {
      * @return
      */
     public String diff() throws IOException, InterruptedException {
-        //第一步：获取最新提交的哈希值
-        ProcessBuilder logProcessBuilder = new ProcessBuilder("git","log","-1","--pretty=format=%H");
+        logger.info("start getting git diff...");
+        
+        // 1️⃣ 检查当前目录是否是 git 仓库
+        ProcessBuilder isGitProcessBuilder = new ProcessBuilder("git", "rev-parse", "--git-dir");
+        isGitProcessBuilder.directory(new File("."));
+        isGitProcessBuilder.redirectErrorStream(true);
+        Process isGitProcess = isGitProcessBuilder.start();
+        int isGitExit = isGitProcess.waitFor();
+        
+        if (isGitExit != 0) {
+            throw new RuntimeException("Current directory is not a git repository");
+        }
+        logger.info("current directory is a git repository");
+        
+        // 2️⃣ 获取最新 commit
+        ProcessBuilder logProcessBuilder = new ProcessBuilder("git", "log", "-1", "--pretty=format=%H");
         logProcessBuilder.directory(new File("."));
         Process logProcess = logProcessBuilder.start();
-        //第二步：读取提交哈希值
+
         BufferedReader logReader = new BufferedReader(new InputStreamReader(logProcess.getInputStream()));
         String latestCommitHash = logReader.readLine();
         logReader.close();
-        logProcess.waitFor();
-        //第三步：执行 Git Diff 命令
-        ProcessBuilder diffProcessBuilder = new ProcessBuilder("git","diff",latestCommitHash + "^",latestCommitHash);
+        int logExit = logProcess.waitFor();
+        
+        if (logExit != 0) {
+            throw new RuntimeException("Failed to get latest commit");
+        }
+
+        if (latestCommitHash == null || latestCommitHash.isEmpty()) {
+            throw new RuntimeException("No commit found in repository");
+        }
+        logger.info("latest commit: {}", latestCommitHash.substring(0, 7));
+
+        // 3️⃣ 判断是否有上一个 commit
+        ProcessBuilder checkProcessBuilder = new ProcessBuilder("git", "rev-parse", latestCommitHash + "^");
+        checkProcessBuilder.directory(new File("."));
+        Process checkProcess = checkProcessBuilder.start();
+        int checkExit = checkProcess.waitFor();
+
+        ProcessBuilder diffProcessBuilder;
+
+        if (checkExit == 0) {
+            // 有上一个 commit
+            logger.info("found previous commit, using diff with previous commit");
+            diffProcessBuilder = new ProcessBuilder("git", "diff", latestCommitHash + "^", latestCommitHash);
+        } else {
+            // 只有一个 commit 或者是初始提交
+            logger.info("only one commit found, using diff with empty tree");
+            diffProcessBuilder = new ProcessBuilder("git", "diff", "4b825dc642cb6eb9a060e54bf8d69288fbee4904", latestCommitHash);
+        }
+
         diffProcessBuilder.directory(new File("."));
+        diffProcessBuilder.redirectErrorStream(true);
         Process diffProcess = diffProcessBuilder.start();
-        //第四步：读取 Diff 输出
+
+        // 4️⃣ 读取输出
         BufferedReader diffReader = new BufferedReader(new InputStreamReader(diffProcess.getInputStream()));
         StringBuilder diffCode = new StringBuilder();
-        String Line;
-        while((Line = diffReader.readLine()) != null) {
-            diffCode.append(Line).append("\n");
+        String line;
+        while ((line = diffReader.readLine()) != null) {
+            diffCode.append(line).append("\n");
         }
         diffReader.close();
-        //第五步：检查命令执行状态
+
         int exitCode = diffProcess.waitFor();
-        if(exitCode != 0) {
-            throw new RuntimeException("get diff failed with exit code " + exitCode);
+        if (exitCode != 0) {
+            throw new RuntimeException("git diff failed with exit code: " + exitCode);
         }
-        //第六步：返回结果
+        
+        logger.info("got diff code, length: {}", diffCode.length());
         return diffCode.toString();
     }
 
