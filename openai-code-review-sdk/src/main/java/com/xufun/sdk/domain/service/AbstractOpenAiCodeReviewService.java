@@ -44,7 +44,6 @@ public abstract class AbstractOpenAiCodeReviewService implements IOpenAiCodeRevi
             // 4. 发送消息通知；日志地址、通知的内容
             logger.info("sending wechat message...");
             pushMessage(logUrl);
-            logger.info("wechat message sent successfully");
             
             logger.info("openai-code-review completed!");
         } catch (Exception e) {
