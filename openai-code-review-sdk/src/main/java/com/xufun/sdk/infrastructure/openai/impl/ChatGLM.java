@@ -52,9 +52,13 @@ public class ChatGLM implements IOpenAI {
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         );
+        
+        byte[] input = JSON.toJSONString(requestDTO).getBytes(StandardCharsets.UTF_8);
+        logger.info("Request body length: {}", input.length);
+        
         try(OutputStream os = connection.getOutputStream()){
-            byte[] input = JSON.toJSONString(requestDTO).getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
+            os.flush();
         }
 
         int responseCode = connection.getResponseCode();
