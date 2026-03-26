@@ -42,11 +42,11 @@ public class ChatCompletionRequestDTO {
         this.model = model;
     }
 
-    public List<Prompt> getMessage() {
+    public List<Prompt> getMessages() {
         return messages;
     }
 
-    public void setMessage(List<Prompt> message) {
+    public void setMessages(List<Prompt> message) {
         this.messages = message;
     }
 }

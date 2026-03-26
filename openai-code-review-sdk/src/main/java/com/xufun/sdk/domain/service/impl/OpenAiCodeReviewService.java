@@ -61,6 +61,7 @@ public class OpenAiCodeReviewService extends AbstractOpenAiCodeReviewService {
                 "{变量4}\n" +
                 "`;代码如下:"));
         messages.add(new ChatCompletionRequestDTO.Prompt("user", diffCode));
+        requestDTO.setMessages(messages);
 
         ChatCompletionSyncResponseDTO completions = openAI.completions(requestDTO);
         ChatCompletionSyncResponseDTO.Message message = completions.getChoices().get(0).getMessage();
