@@ -19,7 +19,7 @@ public class ChatGLM implements IOpenAI {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatGLM.class);
 
-    private final String apiKey;
+    private final String apiKeySecret;
     private final String apiHost;
 
     public ChatGLM(String apiKey, String apiHost) {
@@ -29,21 +29,16 @@ public class ChatGLM implements IOpenAI {
         if (apiHost == null || apiHost.isEmpty()) {
             throw new IllegalArgumentException("API host cannot be null or empty");
         }
-        
-        // 如果没有协议前缀，添加 https://
-        if (!apiHost.startsWith("http://") && !apiHost.startsWith("https://")) {
-            this.apiHost = "https://" + apiHost;
-        } else {
-            this.apiHost = apiHost;
-        }
-        this.apiKey = apiKey;
+
+        this.apiHost = apiHost;
+        this.apiKeySecret = apiKey;
         
         logger.info("ChatGLM initialized with host: {}", this.apiHost);
     }
 
     @Override
     public ChatCompletionSyncResponseDTO completions(ChatCompletionRequestDTO requestDTO) throws Exception {
-        String token = BearerTokenUtils.getToken(apiKey);
+        String token = BearerTokenUtils.getToken(apiKeySecret);
 
         URL url = new URL(apiHost);
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();

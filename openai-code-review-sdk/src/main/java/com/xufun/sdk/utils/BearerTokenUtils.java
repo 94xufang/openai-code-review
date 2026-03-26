@@ -24,9 +24,9 @@ public class BearerTokenUtils {
             .expireAfterWrite(expireMillis - (60 * 1000L), TimeUnit.MILLISECONDS)
             .build();
 
-    public static String getToken(String apiKey) {
-        logger.info("generating token for api key prefix: {}", apiKey.substring(0, Math.min(10, apiKey.length())));
-        String[] split = apiKey.split("\\.");
+    public static String getToken(String apiKeySecret) {
+        logger.info("generating token for api key prefix: {}", apiKeySecret.substring(0, Math.min(10, apiKeySecret.length())));
+        String[] split = apiKeySecret.split("\\.");
         return getToken(split[0], split[1]);
     }
 

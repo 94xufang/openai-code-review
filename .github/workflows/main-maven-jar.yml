@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "=== Environment Variables ==="
           echo "CHATGLM_APIHOST: ${CHATGLM_APIHOST:-NOT_SET}"
-          echo "CHATGLM_APIKEY: ${CHATGLM_APIKEY:-NOT_SET}"
+          echo "CHATGLM_APIKEYSECRET: ${CHATGLM_APIKEYSECRET:-NOT_SET}"
           echo "GITHUB_REVIEW_LOG_URI: ${GITHUB_REVIEW_LOG_URI:-NOT_SET}"
           echo "GITHUB_TOKEN: ${GITHUB_TOKEN:-NOT_SET}"
           echo "WEIXIN_APPID: ${WEIXIN_APPID:-NOT_SET}"
@@ -92,4 +92,4 @@ jobs:
           WEIXIN_TEMPLATE_ID: ${{ secrets.WEIXIN_TEMPLATE_ID }}
           # OpenAi - ChatGLM 配置「https://open.bigmodel.cn/api/paas/v4/chat/completions」、「https://open.bigmodel.cn/usercenter/apikeys」
           CHATGLM_APIHOST: ${{ secrets.CHATGLM_APIHOST }}
-          CHATGLM_APIKEY: ${{ secrets.CHATGLM_APIKEY }}
+          CHATGLM_APIKEYSECRET: ${{ secrets.CHATGLM_APIKEYSECRET }}
