@@ -19,8 +19,19 @@ public class ChatGLM implements IOpenAI {
     private final String apiHost;
 
     public ChatGLM(String apiKey, String apiHost) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new IllegalArgumentException("API key cannot be null or empty");
+        }
+        if (apiHost == null || apiHost.isEmpty()) {
+            throw new IllegalArgumentException("API host cannot be null or empty");
+        }
+        // 如果没有协议前缀，添加 https://
+        if (!apiHost.startsWith("http://") && !apiHost.startsWith("https://")) {
+            this.apiHost = "https://" + apiHost;
+        } else {
+            this.apiHost = apiHost;
+        }
         this.apiKey = apiKey;
-        this.apiHost = apiHost;
     }
 
     @Override

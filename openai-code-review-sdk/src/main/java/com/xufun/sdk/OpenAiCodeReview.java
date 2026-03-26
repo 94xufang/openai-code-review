@@ -44,7 +44,7 @@ public class OpenAiCodeReview {
     private static String getEnv(String key) {
         String value = System.getenv(key);
         if (null == value || value.isEmpty()) {
-            throw new RuntimeException("value is null！！！");
+            throw new RuntimeException("Environment variable " + key + " is not set or empty. Please check your GitHub secrets configuration.");
         }
         return value;
     }
