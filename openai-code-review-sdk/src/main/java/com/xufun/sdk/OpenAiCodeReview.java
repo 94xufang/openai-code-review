@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class OpenAiCodeReview {
     private static final Logger logger = LoggerFactory.getLogger(OpenAiCodeReview.class);
-//测试提交第22次
+//测试提交第25次
     public static void main(String[] args) throws Exception {
         GitCommand gitCommand = new GitCommand(
                 getEnv("GITHUB_REVIEW_LOG_URI"),
