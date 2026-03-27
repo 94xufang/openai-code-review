@@ -105,14 +105,14 @@ public class WeiXin {
         }
         if (sendResponse.getErrcode() != null && sendResponse.getErrcode() != 0) {
             if (sendResponse.getErrcode() == 40003) {
-                logAvailableOpenIdHints(accessToken);
+                logAvailableOpenIdHints(accessToken, normalizedToUser);
             }
             throw new RuntimeException("wechat template message send failed, errcode: "
                     + sendResponse.getErrcode() + ", errmsg: " + sendResponse.getErrmsg());
         }
     }
 
-    private void logAvailableOpenIdHints(String accessToken) {
+    private void logAvailableOpenIdHints(String accessToken, String configuredToUser) {
         try {
             List<String> openIds = queryFollowerOpenIds(accessToken);
             if (openIds.isEmpty()) {
@@ -121,6 +121,7 @@ public class WeiXin {
             }
 
             logger.warn("openid diagnosis: found {} follower openid(s). Configure WEIXIN_TOUSER using one of them.", openIds.size());
+            logConfiguredToUserDiagnostics(configuredToUser, openIds);
             int maxLogCount = Math.min(openIds.size(), 20);
             for (int i = 0; i < maxLogCount; i++) {
                 String openId = openIds.get(i);
@@ -130,6 +131,43 @@ public class WeiXin {
         } catch (Exception e) {
             logger.warn("openid diagnosis failed", e);
         }
+    }
+
+    private void logConfiguredToUserDiagnostics(String configuredToUser, List<String> candidates) {
+        if (configuredToUser == null) {
+            logger.warn("openid diagnosis: configured WEIXIN_TOUSER is null");
+            return;
+        }
+
+        String stripped = stripWrappingQuotes(configuredToUser);
+        boolean exactMatch = candidates.contains(configuredToUser);
+        boolean strippedMatch = candidates.contains(stripped);
+        logger.warn("openid diagnosis: configured WEIXIN_TOUSER length={}, exactMatch={}, strippedQuoteMatch={}",
+                configuredToUser.length(), exactMatch, strippedMatch);
+
+        if (configuredToUser.length() > 0) {
+            int firstCodePoint = configuredToUser.codePointAt(0);
+            int lastCodePoint = configuredToUser.codePointBefore(configuredToUser.length());
+            logger.warn("openid diagnosis: configured WEIXIN_TOUSER firstCodePoint=U+{}, lastCodePoint=U+{}",
+                    Integer.toHexString(firstCodePoint).toUpperCase(),
+                    Integer.toHexString(lastCodePoint).toUpperCase());
+        }
+
+        if (!configuredToUser.equals(stripped)) {
+            logger.warn("openid diagnosis: configured WEIXIN_TOUSER wrapped quotes removed, strippedValue={}", stripped);
+        }
+    }
+
+    private String stripWrappingQuotes(String value) {
+        if (value == null || value.length() < 2) {
+            return value;
+        }
+        char first = value.charAt(0);
+        char last = value.charAt(value.length() - 1);
+        if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 
     private List<String> queryFollowerOpenIds(String accessToken) throws Exception {
