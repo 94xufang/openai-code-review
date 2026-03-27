@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 public class OpenAiCodeReview {
     private static final Logger logger = LoggerFactory.getLogger(OpenAiCodeReview.class);
 //测试提交第25次
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         GitCommand gitCommand = new GitCommand(
                 getEnv("GITHUB_REVIEW_LOG_URI"),
                 getEnv("GITHUB_TOKEN"),
@@ -21,7 +21,7 @@ public class OpenAiCodeReview {
                 getEnv("COMMIT_MESSAGE")
         );
 
-        /**
+        /*
          * 项目：{{repo_name.DATA}} 分支：{{branch_name.DATA}} 作者：{{commit_author.DATA}} 说明：{{commit_message.DATA}}
          */
         WeiXin weiXin = new WeiXin(
