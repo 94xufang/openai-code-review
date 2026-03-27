@@ -23,6 +23,22 @@ public class TemplateMessageDTO {
         data.put(key.getCode(), inner);
     }
 
+    public String getTouser() {
+        return touser;
+    }
+
+    public String getTemplate_id() {
+        return template_id;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public Map<String, Map<String, String>> getData() {
+        return data;
+    }
+
     public enum TemplateKey {
         REPO_NAME("repo_name","项目名称"),
         BRANCH_NAME("branch_name","分支名称"),
