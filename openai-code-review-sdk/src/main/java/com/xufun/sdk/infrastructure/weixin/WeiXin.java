@@ -6,10 +6,14 @@ import com.xufun.sdk.utils.WXAccessTokenUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -45,9 +49,18 @@ public class WeiXin {
         logger.info("access token obtained: {}", accessToken.substring(0, 10) + "...");
         
         //创建模板消息
+        String normalizedToUser = touser == null ? null : touser.trim();
+        String normalizedTemplateId = template_id == null ? null : template_id.trim();
+        if (normalizedToUser == null || normalizedToUser.isEmpty()) {
+            throw new RuntimeException("WEIXIN_TOUSER is empty, please configure a valid openid");
+        }
+        if (normalizedTemplateId == null || normalizedTemplateId.isEmpty()) {
+            throw new RuntimeException("WEIXIN_TEMPLATE_ID is empty, please configure a valid template id");
+        }
+
         TemplateMessageDTO templateMessageDTO = new TemplateMessageDTO(
-                touser == null ? null : touser.trim(),
-                template_id == null ? null : template_id.trim(),
+                normalizedToUser,
+                normalizedTemplateId,
                 logUrl,
                 data
         );
@@ -91,14 +104,204 @@ public class WeiXin {
             throw new RuntimeException("wechat API returned invalid response body");
         }
         if (sendResponse.getErrcode() != null && sendResponse.getErrcode() != 0) {
+            if (sendResponse.getErrcode() == 40003) {
+                logAvailableOpenIdHints(accessToken);
+            }
             throw new RuntimeException("wechat template message send failed, errcode: "
                     + sendResponse.getErrcode() + ", errmsg: " + sendResponse.getErrmsg());
+        }
+    }
+
+    private void logAvailableOpenIdHints(String accessToken) {
+        try {
+            List<String> openIds = queryFollowerOpenIds(accessToken);
+            if (openIds.isEmpty()) {
+                logger.warn("openid diagnosis: no followers found for current appid");
+                return;
+            }
+
+            logger.warn("openid diagnosis: found {} follower openid(s). Configure WEIXIN_TOUSER using one of them.", openIds.size());
+            int maxLogCount = Math.min(openIds.size(), 20);
+            for (int i = 0; i < maxLogCount; i++) {
+                String openId = openIds.get(i);
+                String nickname = queryNickname(accessToken, openId);
+                logger.warn("openid candidate #{}: openid={}, nickname={}", i + 1, openId, nickname == null ? "unknown" : nickname);
+            }
+        } catch (Exception e) {
+            logger.warn("openid diagnosis failed", e);
+        }
+    }
+
+    private List<String> queryFollowerOpenIds(String accessToken) throws Exception {
+        URL followersUrl = new URL(String.format("https://api.weixin.qq.com/cgi-bin/user/get?access_token=%s", accessToken));
+        HttpURLConnection conn = (HttpURLConnection) followersUrl.openConnection();
+        conn.setRequestMethod("GET");
+
+        String body = readResponseBody(conn);
+        int responseCode = conn.getResponseCode();
+        if (responseCode != 200) {
+            throw new RuntimeException("query follower openid failed, responseCode: " + responseCode + ", body: " + body);
+        }
+
+        FollowerListResponse response = JSON.parseObject(body, FollowerListResponse.class);
+        if (response == null) {
+            throw new RuntimeException("query follower openid failed, invalid response body");
+        }
+        if (response.getErrcode() != null && response.getErrcode() != 0) {
+            throw new RuntimeException("query follower openid failed, errcode: " + response.getErrcode() + ", errmsg: " + response.getErrmsg());
+        }
+        if (response.getData() == null || response.getData().getOpenid() == null) {
+            return Collections.emptyList();
+        }
+        return response.getData().getOpenid();
+    }
+
+    private String queryNickname(String accessToken, String openId) {
+        try {
+            URL infoUrl = new URL(String.format("https://api.weixin.qq.com/cgi-bin/user/info?access_token=%s&openid=%s&lang=zh_CN", accessToken, openId));
+            HttpURLConnection conn = (HttpURLConnection) infoUrl.openConnection();
+            conn.setRequestMethod("GET");
+            String body = readResponseBody(conn);
+            if (conn.getResponseCode() != 200) {
+                return "unknown";
+            }
+
+            UserInfoResponse userInfoResponse = JSON.parseObject(body, UserInfoResponse.class);
+            if (userInfoResponse == null) {
+                return "unknown";
+            }
+            if (userInfoResponse.getErrcode() != null && userInfoResponse.getErrcode() != 0) {
+                return "unknown";
+            }
+            return userInfoResponse.getNickname();
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    private String readResponseBody(HttpURLConnection conn) throws Exception {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            if (conn.getErrorStream() == null) {
+                throw e;
+            }
+            reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+        }
+
+        try (BufferedReader closeableReader = reader) {
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = closeableReader.readLine()) != null) {
+                content.append(line);
+            }
+            return content.toString();
         }
     }
 
     public static class WechatSendResponse {
         private Integer errcode;
         private String errmsg;
+
+        public Integer getErrcode() {
+            return errcode;
+        }
+
+        public void setErrcode(Integer errcode) {
+            this.errcode = errcode;
+        }
+
+        public String getErrmsg() {
+            return errmsg;
+        }
+
+        public void setErrmsg(String errmsg) {
+            this.errmsg = errmsg;
+        }
+    }
+
+    public static class FollowerListResponse {
+        private Integer total;
+        private Integer count;
+        private OpenIdData data;
+        private Integer errcode;
+        private String errmsg;
+
+        public Integer getTotal() {
+            return total;
+        }
+
+        public void setTotal(Integer total) {
+            this.total = total;
+        }
+
+        public Integer getCount() {
+            return count;
+        }
+
+        public void setCount(Integer count) {
+            this.count = count;
+        }
+
+        public OpenIdData getData() {
+            return data;
+        }
+
+        public void setData(OpenIdData data) {
+            this.data = data;
+        }
+
+        public Integer getErrcode() {
+            return errcode;
+        }
+
+        public void setErrcode(Integer errcode) {
+            this.errcode = errcode;
+        }
+
+        public String getErrmsg() {
+            return errmsg;
+        }
+
+        public void setErrmsg(String errmsg) {
+            this.errmsg = errmsg;
+        }
+    }
+
+    public static class OpenIdData {
+        private List<String> openid;
+
+        public List<String> getOpenid() {
+            return openid;
+        }
+
+        public void setOpenid(List<String> openid) {
+            this.openid = openid;
+        }
+    }
+
+    public static class UserInfoResponse {
+        private String openid;
+        private String nickname;
+        private Integer errcode;
+        private String errmsg;
+
+        public String getOpenid() {
+            return openid;
+        }
+
+        public void setOpenid(String openid) {
+            this.openid = openid;
+        }
+
+        public String getNickname() {
+            return nickname;
+        }
+
+        public void setNickname(String nickname) {
+            this.nickname = nickname;
+        }
 
         public Integer getErrcode() {
             return errcode;
