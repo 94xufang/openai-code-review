@@ -45,7 +45,12 @@ public class WeiXin {
         logger.info("access token obtained: {}", accessToken.substring(0, 10) + "...");
         
         //创建模板消息
-        TemplateMessageDTO templateMessageDTO = new TemplateMessageDTO(touser, template_id, logUrl, data);
+        TemplateMessageDTO templateMessageDTO = new TemplateMessageDTO(
+                touser == null ? null : touser.trim(),
+                template_id == null ? null : template_id.trim(),
+                logUrl,
+                data
+        );
         logger.info("template message created");
         
         //创建请求
@@ -79,6 +84,36 @@ public class WeiXin {
         
         if (responseCode != 200) {
             throw new RuntimeException("wechat API returned error response: " + responseCode);
+        }
+
+        WechatSendResponse sendResponse = JSON.parseObject(response, WechatSendResponse.class);
+        if (sendResponse == null) {
+            throw new RuntimeException("wechat API returned invalid response body");
+        }
+        if (sendResponse.getErrcode() != null && sendResponse.getErrcode() != 0) {
+            throw new RuntimeException("wechat template message send failed, errcode: "
+                    + sendResponse.getErrcode() + ", errmsg: " + sendResponse.getErrmsg());
+        }
+    }
+
+    public static class WechatSendResponse {
+        private Integer errcode;
+        private String errmsg;
+
+        public Integer getErrcode() {
+            return errcode;
+        }
+
+        public void setErrcode(Integer errcode) {
+            this.errcode = errcode;
+        }
+
+        public String getErrmsg() {
+            return errmsg;
+        }
+
+        public void setErrmsg(String errmsg) {
+            this.errmsg = errmsg;
         }
     }
 
