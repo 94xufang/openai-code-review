@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * 微信公众号模板消息：先取 stable_access_token，再 POST /cgi-bin/message/template/send。
+ * errcode=40003 时会拉取关注者 openid 列表辅助排查配置问题。
+ */
 public class WeiXin {
     private final Logger logger = LoggerFactory.getLogger(WeiXin.class);
 
@@ -36,19 +40,12 @@ public class WeiXin {
     }
 
     public void sendTemplateMessage(String logUrl, Map<String, Map<String, String>> data) throws Exception {
-        logger.info("start sending wechat template message...");
-        logger.info("logUrl: {}", logUrl);
-        logger.info("touser: {}, template_id: {}", touser, template_id);
-        
-        //获得用于操作公众号的令牌
-        logger.info("getting access token...");
         String accessToken = WXAccessTokenUtils.getAccessToken(appid, secret);
         if (accessToken == null || accessToken.isEmpty()) {
             throw new RuntimeException("failed to get access token");
         }
-        logger.info("access token obtained: {}", accessToken.substring(0, 10) + "...");
-        
-        //创建模板消息
+
+        // 模板字段与 openid / template_id 校验在 DTO 构造前完成
         String normalizedToUser = touser == null ? null : touser.trim();
         String normalizedTemplateId = template_id == null ? null : template_id.trim();
         if (normalizedToUser == null || normalizedToUser.isEmpty()) {
@@ -64,9 +61,8 @@ public class WeiXin {
                 logUrl,
                 data
         );
-        logger.info("template message created");
-        
-        //创建请求
+
+        // https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Template_Message_Interface.html
         URL url = new URL(String.format("https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=%s", accessToken));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
@@ -80,21 +76,16 @@ public class WeiXin {
             os.write(input, 0, input.length);
             os.flush();
         }
-        logger.info("request sent to wechat server");
-        
-        //接收结果
+
         int responseCode = conn.getResponseCode();
-        logger.info("wechat response code: {}", responseCode);
         
         String response = "unknown";
         try (Scanner scanner = new Scanner(conn.getInputStream(), StandardCharsets.UTF_8.name())) {
             response = scanner.useDelimiter("\\A").next();
         } catch (Exception e) {
-            logger.warn("failed to read response body", e);
+            logger.warn("failed to read wechat response body", e);
         }
-        
-        logger.info("openai-code-review weixin template message response: {}", response);
-        
+
         if (responseCode != 200) {
             throw new RuntimeException("wechat API returned error response: " + responseCode);
         }
@@ -107,6 +98,8 @@ public class WeiXin {
             if (sendResponse.getErrcode() == 40003) {
                 logAvailableOpenIdHints(accessToken, normalizedToUser);
             }
+            logger.error("wechat template send failed, errcode={}, errmsg={}, body={}",
+                    sendResponse.getErrcode(), sendResponse.getErrmsg(), response);
             throw new RuntimeException("wechat template message send failed, errcode: "
                     + sendResponse.getErrcode() + ", errmsg: " + sendResponse.getErrmsg());
         }

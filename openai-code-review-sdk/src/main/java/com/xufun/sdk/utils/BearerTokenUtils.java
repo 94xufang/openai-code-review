@@ -4,8 +4,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
@@ -14,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class BearerTokenUtils {
-    private static final Logger logger = LoggerFactory.getLogger(BearerTokenUtils.class);
 
     // 过期时间；默认30分钟
     private static final long expireMillis = 30 * 60 * 1000L;
@@ -25,7 +22,6 @@ public class BearerTokenUtils {
             .build();
 
     public static String getToken(String apiKeySecret) {
-        logger.info("generating token for api key prefix: {}", apiKeySecret.substring(0, Math.min(10, apiKeySecret.length())));
         String[] split = apiKeySecret.split("\\.");
         return getToken(split[0], split[1]);
     }
@@ -35,7 +31,7 @@ public class BearerTokenUtils {
      *
      * @param apiKey    登录创建 ApiKey <a href="https://open.bigmodel.cn/usercenter/apikeys">apikeys</a>
      * @param apiSecret apiKey的后半部分 828902ec516c45307619708d3e780ae1.w5eKiLvhnLP8MtIf 取 w5eKiLvhnLP8MtIf 使用
-     * @return Tokene 72842be36ce49edbc23d4bf99f49abb.I3Uf7872KgZ4vyNS
+     * @return JWT 形式的短期访问令牌
      */
     public static String getToken(String apiKey, String apiSecret) {
         // 缓存Token

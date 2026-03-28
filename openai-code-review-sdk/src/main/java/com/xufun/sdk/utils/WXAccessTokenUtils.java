@@ -11,6 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/** 调用微信 stable_token 接口获取 access_token（比 client_credential 更适合服务端长期持有）。 */
 public class WXAccessTokenUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(WXAccessTokenUtils.class);
@@ -20,7 +21,6 @@ public class WXAccessTokenUtils {
 
     public static String getAccessToken(String appId, String secret) {
         try {
-            logger.info("getting stable access token for appid: {}", appId);
             URL url = new URL(STABLE_TOKEN_URL);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
@@ -40,7 +40,6 @@ public class WXAccessTokenUtils {
             }
 
             int responseCode = connection.getResponseCode();
-            logger.info("stable access token response code: {}", responseCode);
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
@@ -53,7 +52,6 @@ public class WXAccessTokenUtils {
                 in.close();
 
                 String responseBody = response.toString();
-                logger.info("stable access token response: {}", responseBody);
 
                 Token token = JSON.parseObject(responseBody, Token.class);
                 if (token == null) {
@@ -71,7 +69,6 @@ public class WXAccessTokenUtils {
                     return null;
                 }
 
-                logger.info("stable access token obtained successfully, expires in: {} seconds", token.getExpires_in());
                 return token.getAccess_token();
             } else {
                 logger.error("stable token request failed with response code: {}", responseCode);

@@ -2,6 +2,7 @@ package com.xufun.sdk.utils;
 
 import java.util.Random;
 
+/** 生成日志文件名用的随机后缀（字母数字混合）。 */
 public class RandomStingUtils {
     public static String randomNumeric(int length) {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

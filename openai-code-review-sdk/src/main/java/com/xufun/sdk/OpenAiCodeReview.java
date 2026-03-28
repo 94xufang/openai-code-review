@@ -5,12 +5,13 @@ import com.xufun.sdk.infrastructure.git.GitCommand;
 import com.xufun.sdk.infrastructure.openai.IOpenAI;
 import com.xufun.sdk.infrastructure.openai.impl.ChatGLM;
 import com.xufun.sdk.infrastructure.weixin.WeiXin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * 入口：从环境变量读取 GitHub / 智谱 / 微信配置，串联 diff → AI 评审 → 日志仓库推送 → 模板消息通知。
+ * 在 CI（如 GitHub Actions）中由对应 Secrets 注入上述变量。
+ */
 public class OpenAiCodeReview {
-    private static final Logger logger = LoggerFactory.getLogger(OpenAiCodeReview.class);
-//测试提交第25次
+
     public static void main(String[] args) {
         GitCommand gitCommand = new GitCommand(
                 getEnv("GITHUB_REVIEW_LOG_URI"),
@@ -21,9 +22,7 @@ public class OpenAiCodeReview {
                 getEnv("COMMIT_MESSAGE")
         );
 
-        /*
-         * 项目：{{repo_name.DATA}} 分支：{{branch_name.DATA}} 作者：{{commit_author.DATA}} 说明：{{commit_message.DATA}}
-         */
+        /* 微信模板占位：项目 / 分支 / 作者 / 说明 对应模板中的 repo_name、branch_name 等 */
         WeiXin weiXin = new WeiXin(
                 getEnv("WEIXIN_APPID"),
                 getEnv("WEIXIN_SECRET"),
@@ -31,14 +30,10 @@ public class OpenAiCodeReview {
                 getEnv("WEIXIN_TEMPLATE_ID")
         );
 
-
-
         IOpenAI openAI = new ChatGLM(getEnv("CHATGLM_APIHOST"), getEnv("CHATGLM_APIKEYSECRET"));
 
         OpenAiCodeReviewService openAiCodeReviewService = new OpenAiCodeReviewService(gitCommand, openAI, weiXin);
         openAiCodeReviewService.exec();
-
-        logger.info("openai-code-review done!");
     }
 
     private static String getEnv(String key) {

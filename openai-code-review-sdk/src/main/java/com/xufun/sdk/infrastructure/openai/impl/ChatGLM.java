@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/** 智谱 Chat Completions HTTP 客户端；调用前通过 BearerTokenUtils 签发短期 JWT。 */
 public class ChatGLM implements IOpenAI {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatGLM.class);
@@ -33,8 +34,6 @@ public class ChatGLM implements IOpenAI {
 
         this.apiHost = apiHost;
         this.apiKeySecret = apiKeySecret;
-        
-        logger.info("ChatGLM initialized with host: {}", this.apiHost);
     }
 
     @Override
@@ -54,15 +53,16 @@ public class ChatGLM implements IOpenAI {
         );
         
         byte[] input = JSON.toJSONString(requestDTO).getBytes(StandardCharsets.UTF_8);
-        logger.info("Request body length: {}", input.length);
-        
+
         try(OutputStream os = connection.getOutputStream()){
             os.write(input, 0, input.length);
             os.flush();
         }
 
         int responseCode = connection.getResponseCode();
-        logger.info("Response Code: {}", responseCode);
+        if (responseCode < 200 || responseCode >= 300) {
+            logger.warn("ChatGLM API HTTP status: {}", responseCode);
+        }
 
         BufferedReader in;
         if (responseCode >= 200 && responseCode < 300) {
@@ -80,8 +80,6 @@ public class ChatGLM implements IOpenAI {
 
         in.close();
         connection.disconnect();
-
-        logger.info("Response Content: {}", content.toString());
 
         return JSON.parseObject(content.toString(), ChatCompletionSyncResponseDTO.class);
 
